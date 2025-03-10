@@ -2,192 +2,233 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Aluno {
+typedef struct Node {
     int matricula;
     char nome[100];
-    struct Aluno* esquerda;
-    struct Aluno* direita;
+    struct Node *esq;
+    struct Node *dir;
     int altura;
-} Aluno;
+} Node;
 
-int altura(Aluno* node) {
-    if (node == NULL)
+int altura(Node *n) {
+    if (n == NULL)
         return 0;
-    return node->altura;
+    return n->altura;
 }
 
-int fatorBalanceamento(Aluno* node) {
-    if (node == NULL)
-        return 0;
-    return altura(node->esquerda) - altura(node->direita);
+int max(int a, int b) {
+    return (a > b) ? a : b;
 }
 
-Aluno* minimo(Aluno* node) {
-    Aluno* atual = node;
-    while (atual && atual->esquerda != NULL)
-        atual = atual->esquerda;
-    return atual;
+Node* novoNo(int matricula, char *nome) {
+    Node* node = (Node*) malloc(sizeof(Node));
+    node->matricula = matricula;
+    strcpy(node->nome, nome);
+    node->esq = node->dir = NULL;
+    node->altura = 1;
+    return node;
 }
 
-Aluno* rotacionarDireita(Aluno* y) {
-    Aluno* x = y->esquerda;
-    Aluno* T2 = x->direita;
+Node* rotacaoDireita(Node *y) {
+    Node *x = y->esq;
+    Node *T2 = x->dir;
 
-    x->direita = y;
-    y->esquerda = T2;
+    x->dir = y;
+    y->esq = T2;
 
-    y->altura = 1 + (altura(y->esquerda) > altura(y->direita) ? altura(y->esquerda) : altura(y->direita));
-    x->altura = 1 + (altura(x->esquerda) > altura(x->direita) ? altura(x->esquerda) : altura(x->direita));
+    y->altura = max(altura(y->esq), altura(y->dir)) + 1;
+    x->altura = max(altura(x->esq), altura(x->dir)) + 1;
 
     return x;
 }
 
-Aluno* rotacionarEsquerda(Aluno* x) {
-    Aluno* y = x->direita;
-    Aluno* T2 = y->esquerda;
+Node* rotacaoEsquerda(Node *x) {
+    Node *y = x->dir;
+    Node *T2 = y->esq;
 
-    y->esquerda = x;
-    x->direita = T2;
+    y->esq = x;
+    x->dir = T2;
 
-    x->altura = 1 + (altura(x->esquerda) > altura(x->direita) ? altura(x->esquerda) : altura(x->direita));
-    y->altura = 1 + (altura(y->esquerda) > altura(y->direita) ? altura(y->esquerda) : altura(y->direita));
+    x->altura = max(altura(x->esq), altura(x->dir)) + 1;
+    y->altura = max(altura(y->esq), altura(y->dir)) + 1;
 
     return y;
 }
 
-Aluno* rotacionarDireitaEsquerda(Aluno* node) {
-    node->direita = rotacionarDireita(node->direita);
-    return rotacionarEsquerda(node);
+int fatorBalanceamento(Node *n) {
+    if (n == NULL)
+        return 0;
+    return altura(n->esq) - altura(n->dir);
 }
 
-Aluno* rotacionarEsquerdaDireita(Aluno* node) {
-    node->esquerda = rotacionarEsquerda(node->esquerda);
-    return rotacionarDireita(node);
-}
+Node* inserir(Node* node, int matricula, char *nome) {
+    if (node == NULL)
+        return novoNo(matricula, nome);
 
-Aluno* inserirAluno(Aluno* node, int matricula, const char* nome) {
-    if (node == NULL) {
-        Aluno* novoAluno = (Aluno*)malloc(sizeof(Aluno));
-        novoAluno->matricula = matricula;
-        strcpy(novoAluno->nome, nome);
-        novoAluno->esquerda = novoAluno->direita = NULL;
-        novoAluno->altura = 1;
-        return novoAluno;
-    }
-
-    if (matricula < node->matricula) {
-        node->esquerda = inserirAluno(node->esquerda, matricula, nome);
-    } else if (matricula > node->matricula) {
-        node->direita = inserirAluno(node->direita, matricula, nome);
-    } else {
+    if (matricula < node->matricula)
+        node->esq = inserir(node->esq, matricula, nome);
+    else if (matricula > node->matricula)
+        node->dir = inserir(node->dir, matricula, nome);
+    else
         return node;
+
+    node->altura = 1 + max(altura(node->esq), altura(node->dir));
+
+    int balance = fatorBalanceamento(node);
+
+    if (balance > 1 && matricula < node->esq->matricula)
+        return rotacaoDireita(node);
+
+    if (balance < -1 && matricula > node->dir->matricula)
+        return rotacaoEsquerda(node);
+
+    if (balance > 1 && matricula > node->esq->matricula) {
+        node->esq = rotacaoEsquerda(node->esq);
+        return rotacaoDireita(node);
     }
 
-    node->altura = 1 + (altura(node->esquerda) > altura(node->direita) ? altura(node->esquerda) : altura(node->direita));
-
-    int balanceamento = fatorBalanceamento(node);
-
-    if (balanceamento > 1 && matricula < node->esquerda->matricula)
-        return rotacionarDireita(node);
-
-    if (balanceamento < -1 && matricula > node->direita->matricula)
-        return rotacionarEsquerda(node);
-
-    if (balanceamento > 1 && matricula > node->esquerda->matricula)
-        return rotacionarEsquerdaDireita(node);
-
-    if (balanceamento < -1 && matricula < node->direita->matricula)
-        return rotacionarDireitaEsquerda(node);
+    if (balance < -1 && matricula < node->dir->matricula) {
+        node->dir = rotacaoDireita(node->dir);
+        return rotacaoEsquerda(node);
+    }
 
     return node;
 }
 
-Aluno* buscarAluno(Aluno* root, int matricula) {
-    if (root == NULL || root->matricula == matricula)
-        return root;
-
-    if (matricula < root->matricula)
-        return buscarAluno(root->esquerda, matricula);
-
-    return buscarAluno(root->direita, matricula);
+Node* noMinimoValor(Node* node) {
+    Node* atual = node;
+    while (atual->esq != NULL)
+        atual = atual->esq;
+    return atual;
 }
 
-Aluno* removerAluno(Aluno* root, int matricula) {
+Node* remover(Node* root, int matricula) {
     if (root == NULL)
         return root;
 
     if (matricula < root->matricula)
-        root->esquerda = removerAluno(root->esquerda, matricula);
+        root->esq = remover(root->esq, matricula);
     else if (matricula > root->matricula)
-        root->direita = removerAluno(root->direita, matricula);
+        root->dir = remover(root->dir, matricula);
     else {
-        if (root->esquerda == NULL || root->direita == NULL) {
-            Aluno* temp = root->esquerda ? root->esquerda : root->direita;
+        if ((root->esq == NULL) || (root->dir == NULL)) {
+            Node *temp = root->esq ? root->esq : root->dir;
+
             if (temp == NULL) {
                 temp = root;
                 root = NULL;
             } else
                 *root = *temp;
+
             free(temp);
         } else {
-            Aluno* temp = minimo(root->direita);
+            Node* temp = noMinimoValor(root->dir);
             root->matricula = temp->matricula;
             strcpy(root->nome, temp->nome);
-            root->direita = removerAluno(root->direita, temp->matricula);
+            root->dir = remover(root->dir, temp->matricula);
         }
     }
 
     if (root == NULL)
         return root;
 
-    root->altura = 1 + (altura(root->esquerda) > altura(root->direita) ? altura(root->esquerda) : altura(root->direita));
+    root->altura = 1 + max(altura(root->esq), altura(root->dir));
+    int balance = fatorBalanceamento(root);
 
-    int balanceamento = fatorBalanceamento(root);
+    if (balance > 1 && fatorBalanceamento(root->esq) >= 0)
+        return rotacaoDireita(root);
 
-    if (balanceamento > 1 && fatorBalanceamento(root->esquerda) >= 0)
-        return rotacionarDireita(root);
+    if (balance > 1 && fatorBalanceamento(root->esq) < 0) {
+        root->esq = rotacaoEsquerda(root->esq);
+        return rotacaoDireita(root);
+    }
 
-    if (balanceamento > 1 && fatorBalanceamento(root->esquerda) < 0)
-        return rotacionarEsquerdaDireita(root);
+    if (balance < -1 && fatorBalanceamento(root->dir) <= 0)
+        return rotacaoEsquerda(root);
 
-    if (balanceamento < -1 && fatorBalanceamento(root->direita) <= 0)
-        return rotacionarEsquerda(root);
-
-    if (balanceamento < -1 && fatorBalanceamento(root->direita) > 0)
-        return rotacionarDireitaEsquerda(root);
+    if (balance < -1 && fatorBalanceamento(root->dir) > 0) {
+        root->dir = rotacaoDireita(root->dir);
+        return rotacaoEsquerda(root);
+    }
 
     return root;
 }
 
-void imprimirArvore(Aluno* root) {
+Node* buscar(Node* root, int matricula) {
+    if (root == NULL || root->matricula == matricula)
+        return root;
+    if (matricula < root->matricula)
+        return buscar(root->esq, matricula);
+    return buscar(root->dir, matricula);
+}
+
+void imprimir(Node* root) {
     if (root != NULL) {
-        imprimirArvore(root->esquerda);
+        imprimir(root->esq);
         printf("Matrícula: %d, Nome: %s\n", root->matricula, root->nome);
-        imprimirArvore(root->direita);
+        imprimir(root->dir);
     }
 }
 
+void imprimirArvore(Node* root, int espaco) {
+    if (root == NULL)
+        return;
+    espaco += 10;
+    imprimirArvore(root->dir, espaco);
+    for (int i = 10; i < espaco; i++)
+        printf(" ");
+    printf("[%d] %s\n", root->matricula, root->nome);
+    imprimirArvore(root->esq, espaco);
+}
+
 int main() {
-    Aluno* root = NULL;
+    Node *root = NULL;
+    int opcao, matricula;
+    char nome[100];
 
-    root = inserirAluno(root, 12345, "Alice");
-    root = inserirAluno(root, 67890, "Bob");
-    root = inserirAluno(root, 54321, "Charlie");
-    root = inserirAluno(root, 98765, "David");
+    do {
+        printf("\nMenu:\n");
+        printf("1. Inserir aluno\n");
+        printf("2. Remover aluno\n");
+        printf("3. Buscar aluno\n");
+        printf("4. Listar alunos\n");
+        printf("5. Visualizar árvore AVL\n");
+        printf("6. Sair\n");
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);
 
-    printf("Árvore AVL:\n");
-    imprimirArvore(root);
-
-    int matriculaBusca = 12345;
-    Aluno* alunoEncontrado = buscarAluno(root, matriculaBusca);
-    if (alunoEncontrado != NULL)
-        printf("\nAluno encontrado: Matrícula: %d, Nome: %s\n", alunoEncontrado->matricula, alunoEncontrado->nome);
-    else
-        printf("\nAluno não encontrado.\n");
-
-    root = removerAluno(root, 67890);
-    printf("\nÁrvore AVL após remoção:\n");
-    imprimirArvore(root);
+        switch (opcao) {
+            case 1:
+                printf("Digite a matrícula: ");
+                scanf("%d", &matricula);
+                printf("Digite o nome: ");
+                scanf("%s", nome);
+                root = inserir(root, matricula, nome);
+                break;
+            case 2:
+                printf("Digite a matrícula a ser removida: ");
+                scanf("%d", &matricula);
+                root = remover(root, matricula);
+                break;
+            case 3:
+                printf("Digite a matrícula para buscar: ");
+                scanf("%d", &matricula);
+                Node* aluno = buscar(root, matricula);
+                if (aluno != NULL)
+                    printf("Aluno encontrado - Matrícula: %d, Nome: %s\n", aluno->matricula, aluno->nome);
+                else
+                    printf("Aluno não encontrado.\n");
+                break;
+            case 4:
+                printf("\nLista de alunos:\n");
+                imprimir(root);
+                break;
+            case 5:
+                printf("\nImprimir árvore:\n");
+                imprimirArvore(root, 0);
+                break;
+        }
+    } while (opcao != 6);
 
     return 0;
 }
