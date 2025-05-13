@@ -123,7 +123,7 @@ void buscarConexoes(Grafo* g, const char* origem) {
 }
 
 void imprimirGrafo(Grafo* g) {
-    printf("\nGrafon");
+    printf("\nGrafo");
     for (int i = 0; i < g->qtd; i++) {
         printf("%s:", g->cidades[i].nome);
         Conexao* atual = g->cidades[i].lista_adj;
@@ -141,7 +141,7 @@ int main() {
     char origem[TAM_NOME], destino[TAM_NOME];
 
     do {
-        printf("\n[1] Inserir conexão\n[2] Remover conexão\n[3] Buscar conexões\n[4] Imprimir grafo\n[0] Sair\n> ");
+        printf("\n1 Inserir conexão\n2 Remover conexão\n3 Buscar conexões\n4 Imprimir grafo\n0 Sair\n> ");
         scanf("%d", &opcao);
         getchar();
 
