@@ -21,7 +21,6 @@ typedef struct Grafo {
     int capacidade;
 } Grafo;
 
-// Funções
 Grafo* criarGrafo(int capacidade);
 void liberarGrafo(Grafo* g);
 void adicionarCidade(Grafo* g, const char* nome);
@@ -33,8 +32,6 @@ void bfs(Grafo* g, const char* inicio);
 
 int encontrarIndice(Grafo* g, const char* nome);
 void dfsRec(Grafo* g, int atual, int* visitado);
-
-// Implementações
 
 Grafo* criarGrafo(int capacidade) {
     Grafo* g = malloc(sizeof(Grafo));
